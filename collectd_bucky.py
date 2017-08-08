@@ -29,6 +29,8 @@ from Crypto.Cipher import AES
 
 log = logging.getLogger(__name__)
 
+PROCESS_JOIN_TIMEOUT = 2
+
 class MyError(Exception):
     def __init__(self, mesg):
         self.mesg = mesg
@@ -446,7 +448,7 @@ class CollectDCrypto(object):
 class CollectDConverter(object):
     def __init__(self, cfg):
         self.converters = dict(DEFAULT_CONVERTERS)
-        self._load_converters(cfg)
+#        self._load_converters(cfg)
 
     def convert(self, sample):
         default = self.converters["_default"]
@@ -468,17 +470,17 @@ class CollectDConverter(object):
             int(sample["time"])
         )
 
-    def _load_converters(self, cfg):
-        cfg_conv = cfg.collectd_converters
-        for conv in cfg_conv:
-            self._add_converter(conv, cfg_conv[conv], source="config")
-        if not cfg.collectd_use_entry_points:
-            return
-        import pkg_resources
-        group = 'bucky.collectd.converters'
-        for ep in pkg_resources.iter_entry_points(group):
-            name, klass = ep.name, ep.load()
-            self._add_converter(name, klass, source=ep.module_name)
+#    def _load_converters(self, cfg):
+#        cfg_conv = cfg.collectd_converters
+#        for conv in cfg_conv:
+#            self._add_converter(conv, cfg_conv[conv], source="config")
+#        if not cfg.collectd_use_entry_points:
+#            return
+#        import pkg_resources
+#        group = 'bucky.collectd.converters'
+#        for ep in pkg_resources.iter_entry_points(group):
+#            name, klass = ep.name, ep.load()
+#            self._add_converter(name, klass, source=ep.module_name)
 
     def _add_converter(self, name, inst, source="unknown"):
         if name not in self.converters:
@@ -501,8 +503,10 @@ class CollectDHandler(object):
 
     def __init__(self, cfg):
         self.crypto = CollectDCrypto(cfg)
-        self.parser = CollectDParser(cfg.collectd_types,
-                                     cfg.collectd_counter_eq_derive)
+        collectd_types = []
+        collectd_counter_eq_derive = False
+        self.parser = CollectDParser(collectd_types,
+                                     collectd_counter_eq_derive)
         self.converter = CollectDConverter(cfg)
         self.prev_samples = {}
         self.last_sample = None
@@ -705,7 +709,8 @@ class CollectDServerMP(UDPServer):
             log.info("Stopping worker %s", worker)
             pipe.send(None)
         for worker, pipe in self.workers:
-            worker.join(self.cfg.process_join_timeout)
+            #worker.join(self.cfg.process_join_timeout)
+            worker.join(PROCESS_JOIN_TIMEOUT)
         for child in multiprocessing.active_children():
             log.error("Child %s didn't die gracefully, terminating", child)
             child.terminate()
