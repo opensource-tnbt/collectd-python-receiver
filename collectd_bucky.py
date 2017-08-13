@@ -31,21 +31,20 @@ log = logging.getLogger(__name__)
 
 PROCESS_JOIN_TIMEOUT = 2
 
-class MyError(Exception):
+class CollectdError(Exception):
     def __init__(self, mesg):
         self.mesg = mesg
 
     def __str__(self):
         return self.mesg
 
-
-class ConnectError(MyError):
+class ConnectError(CollectdError):
     pass
 
-class ConfigError(MyError):
+class ConfigError(CollectdError):
     pass
 
-class ProtocolError(MyError):
+class ProtocolError(CollectdError):
     pass
 
 class UDPServer(multiprocessing.Process):
@@ -470,17 +469,6 @@ class CollectDConverter(object):
             int(sample["time"])
         )
 
-#    def _load_converters(self, cfg):
-#        cfg_conv = cfg.collectd_converters
-#        for conv in cfg_conv:
-#            self._add_converter(conv, cfg_conv[conv], source="config")
-#        if not cfg.collectd_use_entry_points:
-#            return
-#        import pkg_resources
-#        group = 'bucky.collectd.converters'
-#        for ep in pkg_resources.iter_entry_points(group):
-#            name, klass = ep.name, ep.load()
-#            self._add_converter(name, klass, source=ep.module_name)
 
     def _add_converter(self, name, inst, source="unknown"):
         if name not in self.converters:

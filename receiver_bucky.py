@@ -5,11 +5,13 @@ import Queue as queue
 import cfg as cfg
 import collections
 
+
 class Receiver(object):
     def __init__(self):
         self.qOfSamples = multiprocessing.Queue()
         self.server = collectd_bucky.getCollectDServer(self.qOfSamples,cfg)
         self.pdDict = collections.defaultdict(list)
+
     def run(self):
         def sigterm_handler(signum, frame):
             self.qOfSamples.put(None)
@@ -24,12 +26,12 @@ class Receiver(object):
                     break
                 self.handle(sample)
             except queue.Empty:
-                print "EMpty Queue"
                 pass
             except IOError:
                 continue
             except KeyboardInterrupt:
                 break
+
     def handle(self, sample):
         if 'dropped' in sample[1] and 'lo' not in sample[1]:
             self.pdDict[sample[1]].append((sample[2], sample[3]))
