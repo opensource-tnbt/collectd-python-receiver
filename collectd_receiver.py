@@ -4,11 +4,12 @@ import multiprocessing
 import Queue as queue
 import cfg as cfg
 import collections
+import collectd_analytics as ca
 
 
 interrupted = False
 
-def signal_handler(signal):
+def sigint_handler(signal):
     global interrupted
     interrupted = True
 
@@ -24,10 +25,8 @@ class Receiver(object):
 
         self.server.start()
         signal.signal(signal.SIGTERM, sigterm_handler)
-        signal.signal(signal.SIGINT, sigint_handler)
-
+        #signal.signal(signal.SIGINT, sigterm_handler)
         while True:
-            print (self.server.queue.qsize())
             try:
                 sample = self.qOfSamples.get(True, 1)
                 if not sample:
@@ -41,6 +40,7 @@ class Receiver(object):
                 break
             if interrupted:
                 break
+        ca.plotGraphs(self.pdDict)
 
     def handle(self, sample):
         ''' Store the following:
@@ -54,7 +54,9 @@ class Receiver(object):
              any(p in sample[1] for p in ('user', 'system', 'rss'))) or
             ('dropped' in sample[1] and 'lo' not in sample[1])):
             self.pdDict[sample[1]].append((sample[2], sample[3]))
-        print self.pdDict
+            if len(self.pdDict[sample[1]]) > 50:
+                interrupted = True
+        #print self.pdDict
 
     def stop(self):
         pass
