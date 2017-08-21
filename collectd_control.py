@@ -55,7 +55,7 @@ def StopProcess():
 def StartProcess():
     proc = subprocess.Popen(['./'+EXECNAME], stdin=None, stdout=None,
                            stderr=None, cwd=EXECPATH)
-    return pid.
+    return proc.pid()
 
 if __name__ == "__main__":
     check = CheckProcess()

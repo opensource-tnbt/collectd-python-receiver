@@ -6,6 +6,12 @@ import cfg as cfg
 import collections
 
 
+interrupted = False
+
+def signal_handler(signal):
+    global interrupted
+    interrupted = True
+
 class Receiver(object):
     def __init__(self):
         self.qOfSamples = multiprocessing.Queue()
@@ -18,6 +24,8 @@ class Receiver(object):
 
         self.server.start()
         signal.signal(signal.SIGTERM, sigterm_handler)
+        signal.signal(signal.SIGINT, sigint_handler)
+
         while True:
             print (self.server.queue.qsize())
             try:
@@ -31,11 +39,28 @@ class Receiver(object):
                 continue
             except KeyboardInterrupt:
                 break
+            if interrupted:
+                break
 
     def handle(self, sample):
-        if 'dropped' in sample[1] and 'lo' not in sample[1]:
+        ''' Store the following:
+            1. cpu-idle, cpu-system and cpu-user metrics
+            2. processes cpu-system, cpu-idle and rss
+            3. Dropped packets of interfaces except loopback
+            '''
+        if (('cpu' in sample[1] and
+            any(s in sample[1] for s in ('idle', 'user','system'))) or
+            ('processes' in sample[1] and 'ovs' in sample[1] and
+             any(p in sample[1] for p in ('user', 'system', 'rss'))) or
+            ('dropped' in sample[1] and 'lo' not in sample[1])):
             self.pdDict[sample[1]].append((sample[2], sample[3]))
         print self.pdDict
+
+    def stop(self):
+        pass
+
+    def analysze(self):
+        pass
 
 def main():
     receiver = Receiver()
